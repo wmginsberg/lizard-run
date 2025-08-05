@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful Lizard Adventure</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #colorBar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 5px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            min-width: 40px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .colorBlock {
+            width: 20px;
+            height: 20px;
+            margin: 0 2px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            animation: popIn 0.3s ease-out;
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        #lizard {
+            position: absolute;
+            width: 50px;
+            height: 35px;
+            transition: transform 0.1s ease;
+            cursor: pointer;
+            overflow: visible;
+        }
+        
+        #lizard svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.2));
+        }
+        
+        /* Fallback if SVG doesn't load */
+        #lizard.fallback {
+            background: #00FF7F;
+            border-radius: 50% 50% 50% 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .ball {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            animation: bounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .ball.eaten {
+            animation: eatEffect 0.5s ease-out forwards;
+        }
+        
+        @keyframes eatEffect {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.7; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.5s ease;
+            min-width: 200px;
+        }
+        
+        #instructions.celebrate {
+            background: linear-gradient(45deg, #FF1493, #00BFFF, #FFD700, #32CD32);
+            background-size: 400% 400%;
+            animation: celebrateGlow 2s ease-in-out;
+            transform: translateX(-50%) scale(1.1);
+            box-shadow: 0 8px 25px rgba(255, 20, 147, 0.4);
+        }
+        
+        @keyframes celebrateGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        #themeSelector {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        #themeToggle {
+            padding: 12px;
+            font-size: 24px;
+            cursor: pointer;
+            display: block;
+            text-align: center;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        #themeToggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        #themeMenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        #themeMenu.expanded {
+            max-height: 300px;
+            padding: 10px;
+            padding-top: 0;
+        }
+        
+        #themeMenu h4 {
+            margin: 10px 0;
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .theme-button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .theme-button:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .theme-button.active {
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+            text-shadow: none;
+            font-weight: bold;
+        }
+        
+        /* Theme-specific styles */
+        body.neon {
+            background: #000;
+        }
+        
+        body.beige {
+            background: linear-gradient(135deg, #F5F5DC 0%, #DEB887 100%);
+        }
+        
+        body.colorblind {
+            background: linear-gradient(135deg, #4169E1 0%, #1E90FF 100%);
+        }
+        
+        body.classic {
+            background: linear-gradient(135deg, #708090 0%, #2F4F4F 100%);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="colorBar"></div>
+        <div id="lizard"></div>
+        <div id="instructions">Use arrow keys or click/drag to move your lizard! 🦎</div>
+        <div id="themeSelector">
+            <div id="themeToggle">🎨</div>
+            <div id="themeMenu">
+                <h4>Themes</h4>
+                <button class="theme-button" data-theme="party">🎉 Party</button>
+                <button class="theme-button" data-theme="neon">✨ Neon Glow</button>
+                <button class="theme-button" data-theme="beige">🤎 Beige</button>
+                <button class="theme-button" data-theme="colorblind">👁️ Colorblind</button>
+                <button class="theme-button" data-theme="classic">🎯 Classic</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LizardGame {
+            constructor() {
+                this.lizard = document.getElementById('lizard');
+                this.colorBar = document.getElementById('colorBar');
+                this.gameContainer = document.getElementById('gameContainer');
+                
+                this.lizardPos = { x: 400, y: 300 };
+                this.lizardVel = { x: 0, y: 0 };
+                this.balls = [];
+                this.colorHistory = [];
+                this.keys = {};
+                this.mouseDown = false;
+                this.mousePos = { x: 0, y: 0 };
+                this.fibonacci = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987];
+                this.fibonacciIndex = 0;
+                this.instructions = document.getElementById('instructions');
+                
+                this.themes = {
+                    party: {
+                        colors: ['#FF1493', '#00BFFF', '#FFD700', '#FF4500', '#32CD32', '#FF69B4', '#9370DB', '#00FA9A', '#FF6347', '#1E90FF', '#FFA500', '#DA70D6', '#00CED1', '#ADFF2F', '#FF1493', '#7FFF00']
+                    },
+                    neon: {
+                        colors: ['#00FFFF', '#FF00FF', '#FFFF00', '#00FF00', '#FF0080', '#80FF00', '#0080FF', '#FF8000', '#8000FF', '#00FF80', '#FF0040', '#40FF00', '#0040FF', '#FF4000', '#4000FF', '#00FF40']
+                    },
+                    beige: {
+                        colors: ['#F5DEB3', '#DEB887', '#D2B48C', '#BC9A6A', '#A0826D', '#8B7355', '#CD853F', '#DAA520', '#B8860B', '#A0522D', '#8B4513', '#D2691E', '#CD853F', '#F4A460', '#DEB887', '#DDBF94']
+                    },
+                    colorblind: {
+                        colors: ['#0072B2', '#D55E00', '#CC79A7', '#F0E442', '#009E73', '#56B4E9', '#E69F00', '#0072B2', '#D55E00', '#CC79A7', '#F0E442', '#009E73', '#56B4E9', '#E69F00', '#0072B2', '#D55E00']
+                    },
+                    classic: {
+                        colors: ['#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#800080', '#FFC0CB', '#FF0000', '#FFA500', '#FFFF00', '#008000', '#0000FF', '#800080', '#FFC0CB', '#A0522D', '#000000']
+                    }
+                };
+                
+                this.currentTheme = 'party';
+                this.colors = this.themes[this.currentTheme].colors;
+                
+                this.lizardMessages = [
+                    "🦎 Scale new heights! You're amazing!",
+                    "🌟 Cold-blooded but warm-hearted champion!",
+                    "🎉 You're totally gecko-ing this game!",
+                    "🔥 Iguana congratulate you on that skill!",
+                    "🏆 Lizard legend in the making!",
+                    "✨ You're absolutely rep-tile-ing with joy!",
+                    "🌈 Chameleon-level adaptability achieved!",
+                    "🎊 Scales of success are tipping your way!",
+                    "💫 You're one in a gecko-million!",
+                    "🎯 Tongue-twisting talent right there!",
+                    "🌟 Basking in your brilliance!",
+                    "🔥 You're dragon this game to victory!",
+                    "🏅 Master of the color spectrum!",
+                    "✨ Shedding all limits like a true lizard!",
+                    "🎉 Your skills are absolutely scale-tacular!",
+                    "🌈 Rainbow collector extraordinaire!",
+                    "🦎 Komodo-ing an incredible job!",
+                    "⭐ You're the apex predator of fun!",
+                    "🎊 Slithering straight to success!",
+                    "💎 Rare and precious like a jeweled gecko!"
+                ];
+                
+                this.init();
+                this.loadLizardSVG();
+                this.setupThemeSelector();
+                this.gameLoop();
+                this.spawnBalls();
+            }
+            
+            async loadLizardSVG() {
+                try {
+                    const response = await fetch('lizard.svg');
+                    if (response.ok) {
+                        const svgText = await response.text();
+                        this.lizard.innerHTML = svgText;
+                        // Find the main lizard body element(s) that should change color
+                        this.lizardColorElements = this.lizard.querySelectorAll('[data-lizard-body="true"], .lizard-body, path[fill*="#"], circle[fill*="#"], ellipse[fill*="#"]');
+                        if (this.lizardColorElements.length === 0) {
+                            // Fallback: find any element with a fill attribute
+                            this.lizardColorElements = this.lizard.querySelectorAll('[fill]');
+                        }
+                    } else {
+                        throw new Error('SVG not found');
+                    }
+                } catch (error) {
+                    console.log('Custom lizard.svg not found, using placeholder SVG');
+                    this.createPlaceholderSVG();
+                }
+            }
+            
+            createPlaceholderSVG() {
+                const placeholderSVG = `
+                    <svg viewBox="0 0 50 35" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Lizard body -->
+                        <ellipse cx="25" cy="17" rx="20" ry="12" fill="#00FF7F" stroke="#fff" stroke-width="2" class="lizard-body"/>
+                        
+                        <!-- Tail -->
+                        <ellipse cx="45" cy="20" rx="8" ry="6" fill="#00FF7F" stroke="#fff" stroke-width="2" class="lizard-body" transform="rotate(-15 45 20)"/>
+                        
+                        <!-- Head -->
+                        <ellipse cx="15" cy="17" rx="8" ry="10" fill="#00FF7F" stroke="#fff" stroke-width="2" class="lizard-body"/>
+                        
+                        <!-- Eyes -->
+                        <circle cx="12" cy="13" r="3" fill="#fff" stroke="#333" stroke-width="1"/>
+                        <circle cx="18" cy="13" r="3" fill="#fff" stroke="#333" stroke-width="1"/>
+                        <circle cx="12" cy="13" r="1.5" fill="#000"/>
+                        <circle cx="18" cy="13" r="1.5" fill="#000"/>
+                        
+                        <!-- Smile -->
+                        <path d="M 10 21 Q 15 24 20 21" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                        
+                        <!-- Legs -->
+                        <ellipse cx="20" cy="27" rx="3" ry="2" fill="#00FF7F" class="lizard-body"/>
+                        <ellipse cx="30" cy="27" rx="3" ry="2" fill="#00FF7F" class="lizard-body"/>
+                        <ellipse cx="15" cy="28" rx="2" ry="1.5" fill="#00FF7F" class="lizard-body"/>
+                        <ellipse cx="35" cy="28" rx="2" ry="1.5" fill="#00FF7F" class="lizard-body"/>
+                        
+                        <!-- Spots for decoration -->
+                        <circle cx="22" cy="15" r="1.5" fill="#32CD32" opacity="0.7"/>
+                        <circle cx="28" cy="19" r="1" fill="#32CD32" opacity="0.7"/>
+                        <circle cx="35" cy="17" r="1.2" fill="#32CD32" opacity="0.7"/>
+                    </svg>
+                `;
+                
+                this.lizard.innerHTML = placeholderSVG;
+                this.lizardColorElements = this.lizard.querySelectorAll('.lizard-body');
+            }
+            
+            init() {
+                this.updateLizardPosition();
+                
+                document.addEventListener('keydown', (e) => this.keys[e.key] = true);
+                document.addEventListener('keyup', (e) => this.keys[e.key] = false);
+                
+                document.addEventListener('mousedown', (e) => {
+                    this.mouseDown = true;
+                    this.mousePos = { x: e.clientX, y: e.clientY };
+                });
+                
+                document.addEventListener('mouseup', () => this.mouseDown = false);
+                
+                document.addEventListener('mousemove', (e) => {
+                    this.mousePos = { x: e.clientX, y: e.clientY };
+                });
+                
+                document.addEventListener('touchstart', (e) => {
+                    this.mouseDown = true;
+                    this.mousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('touchend', () => this.mouseDown = false);
+                
+                document.addEventListener('touchmove', (e) => {
+                    this.mousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    e.preventDefault();
+                });
+            }
+            
+            setupThemeSelector() {
+                const themeToggle = document.getElementById('themeToggle');
+                const themeMenu = document.getElementById('themeMenu');
+                const themeButtons = document.querySelectorAll('.theme-button');
+                
+                document.querySelector('[data-theme="party"]').classList.add('active');
+                
+                themeToggle.addEventListener('click', () => {
+                    themeMenu.classList.toggle('expanded');
+                });
+                
+                document.addEventListener('click', (e) => {
+                    if (!document.getElementById('themeSelector').contains(e.target)) {
+                        themeMenu.classList.remove('expanded');
+                    }
+                });
+                
+                themeButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const theme = button.dataset.theme;
+                        this.changeTheme(theme);
+                        
+                        themeButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        
+                        themeMenu.classList.remove('expanded');
+                    });
+                });
+            }
+            
+            changeTheme(themeName) {
+                this.currentTheme = themeName;
+                this.colors = this.themes[themeName].colors;
+                
+                document.body.className = themeName;
+                
+                this.balls.forEach(ball => {
+                    const newColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+                    ball.color = newColor;
+                    ball.element.style.backgroundColor = newColor;
+                    
+                    if (this.currentTheme === 'neon') {
+                        ball.element.style.boxShadow = `0 0 20px ${newColor}, 0 2px 8px rgba(0, 0, 0, 0.3)`;
+                    } else {
+                        ball.element.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+                    }
+                });
+            }
+            
+            updateLizardPosition() {
+                this.lizard.style.left = this.lizardPos.x + 'px';
+                this.lizard.style.top = this.lizardPos.y + 'px';
+            }
+            
+            handleInput() {
+                const speed = 0.3;
+                const friction = 0.85;
+                
+                if (this.keys['ArrowLeft'] || this.keys['a'] || this.keys['A']) {
+                    this.lizardVel.x -= speed;
+                }
+                if (this.keys['ArrowRight'] || this.keys['d'] || this.keys['D']) {
+                    this.lizardVel.x += speed;
+                }
+                if (this.keys['ArrowUp'] || this.keys['w'] || this.keys['W']) {
+                    this.lizardVel.y -= speed;
+                }
+                if (this.keys['ArrowDown'] || this.keys['s'] || this.keys['S']) {
+                    this.lizardVel.y += speed;
+                }
+                
+                if (this.mouseDown) {
+                    const dx = this.mousePos.x - (this.lizardPos.x + 25);
+                    const dy = this.mousePos.y - (this.lizardPos.y + 17);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 5) {
+                        this.lizardVel.x += (dx / distance) * speed * 1.5;
+                        this.lizardVel.y += (dy / distance) * speed * 1.5;
+                    }
+                }
+                
+                this.lizardVel.x *= friction;
+                this.lizardVel.y *= friction;
+                
+                this.lizardPos.x += this.lizardVel.x;
+                this.lizardPos.y += this.lizardVel.y;
+                
+                const maxX = window.innerWidth - 50;
+                const maxY = window.innerHeight - 35;
+                
+                if (this.lizardPos.x < 0) {
+                    this.lizardPos.x = 0;
+                    this.lizardVel.x = 0;
+                }
+                if (this.lizardPos.x > maxX) {
+                    this.lizardPos.x = maxX;
+                    this.lizardVel.x = 0;
+                }
+                if (this.lizardPos.y < 0) {
+                    this.lizardPos.y = 0;
+                    this.lizardVel.y = 0;
+                }
+                if (this.lizardPos.y > maxY) {
+                    this.lizardPos.y = maxY;
+                    this.lizardVel.y = 0;
+                }
+            }
+            
+            spawnBall() {
+                const ball = document.createElement('div');
+                ball.className = 'ball';
+                
+                const color = this.colors[Math.floor(Math.random() * this.colors.length)];
+                ball.style.backgroundColor = color;
+                
+                if (this.currentTheme === 'neon') {
+                    ball.style.boxShadow = `0 0 20px ${color}, 0 2px 8px rgba(0, 0, 0, 0.3)`;
+                } else {
+                    ball.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+                }
+                
+                const x = Math.random() * (window.innerWidth - 100) + 50;
+                const y = Math.random() * (window.innerHeight - 150) + 100;
+                
+                ball.style.left = x + 'px';
+                ball.style.top = y + 'px';
+                
+                const velocity = {
+                    x: (Math.random() - 0.5) * 0.5,
+                    y: (Math.random() - 0.5) * 0.5
+                };
+                
+                this.gameContainer.appendChild(ball);
+                this.balls.push({ element: ball, x: x, y: y, vel: velocity, color: color });
+            }
+            
+            updateBalls() {
+                this.balls.forEach((ball, index) => {
+                    ball.x += ball.vel.x;
+                    ball.y += ball.vel.y;
+                    
+                    if (ball.x <= 0 || ball.x >= window.innerWidth - 20) {
+                        ball.vel.x *= -1;
+                        ball.x = Math.max(0, Math.min(window.innerWidth - 20, ball.x));
+                    }
+                    if (ball.y <= 80 || ball.y >= window.innerHeight - 20) {
+                        ball.vel.y *= -1;
+                        ball.y = Math.max(80, Math.min(window.innerHeight - 20, ball.y));
+                    }
+                    
+                    ball.element.style.left = ball.x + 'px';
+                    ball.element.style.top = ball.y + 'px';
+                    
+                    const dx = (this.lizardPos.x + 25) - (ball.x + 10);
+                    const dy = (this.lizardPos.y + 17) - (ball.y + 10);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 25) {
+                        this.eatBall(index);
+                    }
+                });
+            }
+            
+            eatBall(index) {
+                const ball = this.balls[index];
+                
+                // Change lizard color - works with both CSS and SVG
+                if (this.lizardColorElements && this.lizardColorElements.length > 0) {
+                    // SVG lizard - change fill attribute
+                    this.lizardColorElements.forEach(element => {
+                        element.setAttribute('fill', ball.color);
+                    });
+                } else {
+                    // Fallback CSS lizard
+                    this.lizard.style.backgroundColor = ball.color;
+                }
+                
+                this.colorHistory.push(ball.color);
+                this.updateColorBar();
+                
+                this.checkFibonacciMilestone();
+                
+                ball.element.classList.add('eaten');
+                
+                setTimeout(() => {
+                    if (ball.element.parentNode) {
+                        ball.element.parentNode.removeChild(ball.element);
+                    }
+                }, 500);
+                
+                this.balls.splice(index, 1);
+            }
+            
+            checkFibonacciMilestone() {
+                const ballsEaten = this.colorHistory.length;
+                
+                if (this.fibonacciIndex < this.fibonacci.length && 
+                    ballsEaten === this.fibonacci[this.fibonacciIndex]) {
+                    
+                    this.showCelebrationMessage();
+                    this.fibonacciIndex++;
+                }
+            }
+            
+            showCelebrationMessage() {
+                const randomMessage = this.lizardMessages[Math.floor(Math.random() * this.lizardMessages.length)];
+                
+                this.instructions.textContent = randomMessage;
+                this.instructions.classList.add('celebrate');
+                
+                setTimeout(() => {
+                    this.instructions.classList.remove('celebrate');
+                }, 2000);
+                
+                setTimeout(() => {
+                    this.instructions.textContent = "Use arrow keys or click/drag to move your lizard! 🦎";
+                }, 4000);
+            }
+            
+            updateColorBar() {
+                const colorBlock = document.createElement('div');
+                colorBlock.className = 'colorBlock';
+                colorBlock.style.backgroundColor = this.colorHistory[this.colorHistory.length - 1];
+                this.colorBar.appendChild(colorBlock);
+            }
+            
+            spawnBalls() {
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => this.spawnBall(), i * 1000);
+                }
+                
+                setInterval(() => {
+                    if (this.balls.length < 5) {
+                        this.spawnBall();
+                    }
+                }, 3000);
+            }
+            
+            gameLoop() {
+                this.handleInput();
+                this.updateBalls();
+                this.updateLizardPosition();
+                
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        }
+        
+        window.addEventListener('load', () => {
+            new LizardGame();
+        });
+    </script>
+</body>
+</html>
